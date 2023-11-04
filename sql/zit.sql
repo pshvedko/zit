@@ -64,7 +64,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.log (
     id bigint,
-    ip inet,
+    ip inet check ( family(ip) = 4 ),
     date timestamp without time zone DEFAULT now()
 );
 

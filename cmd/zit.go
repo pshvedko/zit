@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/pshvedko/zit/service"
-	"github.com/pshvedko/zit/service/loader/postgres"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/spf13/cobra"
+
+	"github.com/pshvedko/zit/service"
+	"github.com/pshvedko/zit/service/loader"
 )
 
 func main() {
@@ -26,7 +28,7 @@ func main() {
 		Use:  "zit",
 		Long: "Duplicate detection microservice",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			r, err := postgres.New(baseFlag)
+			r, err := loader.New(baseFlag)
 			if err != nil {
 				return err
 			}

@@ -1,17 +1,18 @@
 package loader
 
-import "context"
+import (
+	"context"
+	"net"
+)
 
-type Streamer interface {
-	Close()
-	Next() bool
-	Scan(...any) error
+type Pusher interface {
+	Push(int64, net.IP) error
 }
 
 type Loader interface {
-	Load(ctx context.Context) (Streamer, error)
+	Load(context.Context, Pusher) error
 	Listen(string) error
 	Unlisten(string) error
-	Receive(context.Context, ...any) error
+	Update(context.Context, Pusher) error
 	Close() error
 }

@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -49,11 +48,11 @@ func (c Conn) Update(ctx context.Context, w Pusher) error {
 	if err != nil {
 		return err
 	}
-	ip := net.ParseIP(f[1]).To4()
-	if ip == nil {
-		return errors.New("invalid ip v4 address")
+	ip, _, err := net.ParseCIDR(f[1])
+	if err != nil {
+		return err
 	}
-	return w.Push(id, ip)
+	return w.Push(id, ip.To4())
 }
 
 func New(name string) (Loader, error) {

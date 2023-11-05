@@ -68,5 +68,5 @@ func New(name string) (Loader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{conn}, nil
+	return Conn{conn}, nil
 }

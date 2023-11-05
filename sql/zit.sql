@@ -46,7 +46,7 @@ CREATE FUNCTION public.log_notify() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-	PERFORM pg_notify('log', NEW.id || ' ' || NEW.ip);
+	PERFORM pg_notify('log', NEW.id || ' ' || host(NEW.ip));
 	RETURN NULL;
 END;
 $$;
@@ -64,7 +64,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.log (
     id bigint,
-    ip inet check ( family(ip) = 4 ),
+    ip inet check ( family(ip) = 4 AND masklen(ip) = 32 ),
     date timestamp without time zone DEFAULT now()
 );
 

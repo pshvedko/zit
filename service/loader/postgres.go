@@ -2,10 +2,8 @@ package loader
 
 import (
 	"context"
-	"io"
+	"fmt"
 	"net"
-	"strconv"
-	"strings"
 
 	"github.com/jackc/pgx"
 )
@@ -35,20 +33,26 @@ func (c Conn) Load(ctx context.Context, w Pusher) error {
 	return r.Err()
 }
 
+type IP struct {
+	net.IP
+}
+
+func (ip *IP) Scan(r fmt.ScanState, v rune) error {
+	b, err := r.Token(true, nil)
+	if err != nil {
+		return err
+	}
+	return ip.UnmarshalText(b)
+}
+
 func (c Conn) Update(ctx context.Context, w Pusher) error {
 	n, err := c.WaitForNotification(ctx)
 	if err != nil {
 		return err
 	}
-	f := strings.Fields(n.Payload)
-	if len(f) != 2 {
-		return io.EOF
-	}
-	id, err := strconv.ParseInt(f[0], 10, 64)
-	if err != nil {
-		return err
-	}
-	ip, _, err := net.ParseCIDR(f[1])
+	var id int64
+	var ip IP
+	_, err = fmt.Sscan(n.Payload, &id, &ip)
 	if err != nil {
 		return err
 	}

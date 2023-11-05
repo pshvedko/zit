@@ -25,7 +25,7 @@ func (c Conn) Load(ctx context.Context, w Pusher) error {
 		if err != nil {
 			return err
 		}
-		err = w.Push(id, ip)
+		err = w.Push(id, ip.To4())
 		if err != nil {
 			return err
 		}

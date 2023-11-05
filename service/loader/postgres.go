@@ -37,7 +37,7 @@ type IP struct {
 	net.IP
 }
 
-func (ip *IP) Scan(r fmt.ScanState, v rune) error {
+func (ip *IP) Scan(r fmt.ScanState, _ rune) error {
 	b, err := r.Token(true, nil)
 	if err != nil {
 		return err

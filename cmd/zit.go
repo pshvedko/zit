@@ -12,14 +12,17 @@ import (
 
 	"github.com/pshvedko/zit/service"
 	"github.com/pshvedko/zit/service/loader"
+	"github.com/pshvedko/zit/storage"
 )
 
 func main() {
-	var s service.Service
 	var addrFlag string
 	var portFlag string
 	var baseFlag string
 
+	s := service.Service{
+		Storage: storage.Storage{},
+	}
 	defer s.Wait()
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

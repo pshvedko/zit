@@ -17,11 +17,16 @@ import (
 	"github.com/pshvedko/zit/service/loader"
 )
 
+type Storage interface {
+	Append(id int64, ip int32) error
+	Intersected(id1, id2 int64) bool
+}
+
 type Service struct {
 	http.Server
 	sync.WaitGroup
 	sync.RWMutex
-	ids map[int64]map[int32]struct{}
+	Storage
 }
 
 func (s *Service) Push(id int64, ip net.IP) error {
@@ -33,17 +38,7 @@ func (s *Service) Push(id int64, ip net.IP) error {
 	}
 	s.Lock()
 	defer s.Unlock()
-	if s.ids == nil {
-		s.ids = map[int64]map[int32]struct{}{id: {ipv4: struct{}{}}}
-	} else {
-		ips, ok := s.ids[id]
-		if !ok {
-			ips = map[int32]struct{}{}
-			s.ids[id] = ips
-		}
-		ips[ipv4] = struct{}{}
-	}
-	return nil
+	return s.Append(id, ipv4)
 }
 
 type Response struct {
@@ -64,33 +59,21 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(Response{Dupes: s.intersected(one, two)})
+	err = json.NewEncoder(w).Encode(Response{
+		Dupes: s.Dupes(one, two),
+	})
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (s *Service) intersected(id1, id2 int64) bool {
+func (s *Service) Dupes(id1, id2 int64) bool {
 	if id1 == id2 {
 		return true
 	}
 	s.RLock()
 	defer s.RUnlock()
-	ips1, ips2 := s.ids[id1], s.ids[id2]
-	if len(ips1) > len(ips2) {
-		ips1, ips2 = ips2, ips1
-	}
-	var n int
-	for ipv4 := range ips1 {
-		_, ok := ips2[ipv4]
-		if ok {
-			n++
-			if n == 2 {
-				return true
-			}
-		}
-	}
-	return false
+	return s.Intersected(id1, id2)
 }
 
 func (s *Service) Run(ctx context.Context, addr, port string) error {
@@ -101,11 +84,11 @@ func (s *Service) Run(ctx context.Context, addr, port string) error {
 	s.BaseContext = func(net.Listener) context.Context {
 		return ctx
 	}
-	go s.waitForContextCancel(ctx)
+	go s.WaitForContextCancel(ctx)
 	return s.ListenAndServe()
 }
 
-func (s *Service) waitForContextCancel(ctx context.Context) {
+func (s *Service) WaitForContextCancel(ctx context.Context) {
 	s.Add(1)
 	defer s.Done()
 	<-ctx.Done()
@@ -123,11 +106,11 @@ func (s *Service) Load(ctx context.Context, r loader.Loader) error {
 	if err != nil {
 		return err
 	}
-	go s.waitForNotification(ctx, r)
+	go s.WaitForNotification(ctx, r)
 	return nil
 }
 
-func (s *Service) waitForNotification(ctx context.Context, r loader.Loader) {
+func (s *Service) WaitForNotification(ctx context.Context, r loader.Loader) {
 	s.Add(1)
 	defer s.Done()
 	for {

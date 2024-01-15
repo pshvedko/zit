@@ -17,10 +17,15 @@ import (
 	"github.com/pshvedko/zit/service/loader"
 )
 
+type Storage interface {
+	Insert(id int64, ip int32) bool
+	Intersected(id1, id2 int64) bool
+}
+
 type Service struct {
 	http.Server
 	sync.WaitGroup
-	ArrayIntersection
+	Storage
 }
 
 func (s *Service) Push(id int64, ip net.IP) error {
@@ -30,7 +35,7 @@ func (s *Service) Push(id int64, ip net.IP) error {
 	if err != nil {
 		return err
 	}
-	s.insert(id, ipv4)
+	s.Insert(id, ipv4)
 	return nil
 }
 
@@ -52,7 +57,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(Response{Dupes: s.intersected(one, two)})
+	err = json.NewEncoder(w).Encode(Response{
+		Dupes: s.Intersected(one, two),
+	})
 	if err != nil {
 		log.Println(err)
 	}
@@ -66,11 +73,11 @@ func (s *Service) Run(ctx context.Context, addr, port string) error {
 	s.BaseContext = func(net.Listener) context.Context {
 		return ctx
 	}
-	go s.waitForContextCancel(ctx)
+	go s.WaitForContextCancel(ctx)
 	return s.ListenAndServe()
 }
 
-func (s *Service) waitForContextCancel(ctx context.Context) {
+func (s *Service) WaitForContextCancel(ctx context.Context) {
 	s.Add(1)
 	defer s.Done()
 	<-ctx.Done()
@@ -88,11 +95,11 @@ func (s *Service) Load(ctx context.Context, r loader.Loader) error {
 	if err != nil {
 		return err
 	}
-	go s.waitForNotification(ctx, r)
+	go s.WaitForNotification(ctx, r)
 	return nil
 }
 
-func (s *Service) waitForNotification(ctx context.Context, r loader.Loader) {
+func (s *Service) WaitForNotification(ctx context.Context, r loader.Loader) {
 	s.Add(1)
 	defer s.Done()
 	for {

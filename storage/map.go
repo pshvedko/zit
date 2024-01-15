@@ -39,6 +39,9 @@ func (s *MapIntersection) Intersected(id1, id2 int64) bool {
 	}
 	var n int
 	for ipv4 := range ips1 {
+		if len(ips2) == 0 {
+			break
+		}
 		_, ok := ips2[ipv4]
 		if ok {
 			n++

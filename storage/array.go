@@ -42,6 +42,9 @@ func (s *ArrayIntersection) Intersected(id1, id2 int64) bool {
 	}
 	var n int
 	for _, ipv4 := range ips1 {
+		if len(ips2) == 0 {
+			break
+		}
 		i, ok := slices.BinarySearch(ips2, ipv4)
 		if ok {
 			i++

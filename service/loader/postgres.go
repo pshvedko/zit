@@ -13,7 +13,7 @@ type Conn struct {
 }
 
 func (c Conn) Load(ctx context.Context, w Pusher) error {
-	r, err := c.QueryEx(ctx, "SELECT id, ip FROM log", nil)
+	r, err := c.QueryEx(ctx, "SELECT id, ip FROM log ORDER BY 1, 2", nil)
 	if err != nil {
 		return err
 	}

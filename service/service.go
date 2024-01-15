@@ -20,8 +20,7 @@ import (
 type Service struct {
 	http.Server
 	sync.WaitGroup
-	sync.RWMutex
-	ids map[int64]map[int32]struct{}
+	ArrayIntersection
 }
 
 func (s *Service) Push(id int64, ip net.IP) error {
@@ -31,18 +30,7 @@ func (s *Service) Push(id int64, ip net.IP) error {
 	if err != nil {
 		return err
 	}
-	s.Lock()
-	defer s.Unlock()
-	if s.ids == nil {
-		s.ids = map[int64]map[int32]struct{}{id: {ipv4: struct{}{}}}
-	} else {
-		ips, ok := s.ids[id]
-		if !ok {
-			ips = map[int32]struct{}{}
-			s.ids[id] = ips
-		}
-		ips[ipv4] = struct{}{}
-	}
+	s.insert(id, ipv4)
 	return nil
 }
 
@@ -68,29 +56,6 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func (s *Service) intersected(id1, id2 int64) bool {
-	if id1 == id2 {
-		return true
-	}
-	s.RLock()
-	defer s.RUnlock()
-	ips1, ips2 := s.ids[id1], s.ids[id2]
-	if len(ips1) > len(ips2) {
-		ips1, ips2 = ips2, ips1
-	}
-	var n int
-	for ipv4 := range ips1 {
-		_, ok := ips2[ipv4]
-		if ok {
-			n++
-			if n == 2 {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (s *Service) Run(ctx context.Context, addr, port string) error {

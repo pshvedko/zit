@@ -30,15 +30,15 @@ func main() {
 	c := &cobra.Command{
 		Use:  "zit",
 		Long: "Duplicate detection microservice",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(*cobra.Command, []string) error {
 			r, err := loader.New(baseFlag)
 			if err != nil {
 				return err
 			}
-			return s.Load(cmd.Context(), r)
+			return s.Load(ctx, r)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			err := s.Run(cmd.Context(), addrFlag, portFlag)
+		RunE: func(*cobra.Command, []string) error {
+			err := s.Run(ctx, addrFlag, portFlag)
 			switch {
 			case errors.Is(err, http.ErrServerClosed):
 				return nil
@@ -52,7 +52,7 @@ func main() {
 	c.Flags().StringVar(&portFlag, "port", "8080", "bind port")
 	c.Flags().StringVar(&baseFlag, "db", "postgres://postgres:postgres@postgres:5432/zit", "data base")
 
-	err := c.ExecuteContext(ctx)
+	err := c.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
